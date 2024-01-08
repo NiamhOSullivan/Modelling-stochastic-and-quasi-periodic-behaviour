@@ -16,13 +16,30 @@ import corner
 ################################
 
 def simulate_times_regular(T, dt):
-    # Simulate regularly sampled time-array with duration T and cadence dt
+    ''' Simulate regularly sampled time-array with duration T and cadence dt
+        Inputs:
+            T: integer
+            dt: integer 
+        Outputs: 
+            t: array of floats
+    '''
+
     N = int(T / dt) # total no. obs
     t = np.linspace(dt, T, N)
     return t
 
 def get_GP(params, components, t, y_err = None, log = True):
-    # Create GP object with desired kernel and parameters
+    '''Create GP object with desired kernel and parameters
+       Inputs:
+           params: array of floats
+           components: array of strings
+           t: array of floats 
+           y_err: array of floats 
+           log: True or Flase 
+       Outputs:
+           gp: object 
+    '''
+   
     if log:
         params_not_log = np.exp(params)
     else:
@@ -194,7 +211,6 @@ def bin_and_trim(t, y, bin_fac, dur_frac = 1):
     n_in = len(t_new)
     n_out = int(np.floor(n_in / bin_fac))
     n_in_adjusted = n_out * bin_fac
-    #t_nnew = t_new[:n_in_adjusted].reshape(n_out, n_in_adjusted // n_out).mean(1)
     t_nnew = t_new[:n_in_adjusted].reshape(n_out, bin_fac).mean(1)
     if nsim == 1:
         y_nnew = y_new[:n_in_adjusted].reshape(n_out, bin_fac).mean(1)
@@ -224,7 +240,6 @@ def bin_and_trim_error(t, y, err, bin_fac, dur_frac = 1):
     n_in = len(t_new)
     n_out = int(np.floor(n_in / bin_fac))
     n_in_adjusted = n_out * bin_fac
-    #t_nnew = t_new[:n_in_adjusted].reshape(n_out, n_in_adjusted // n_out).mean(1)
     t_nnew = t_new[:n_in_adjusted].reshape(n_out, bin_fac).mean(1)
     if nsim == 1:
         y_nnew = y_new[:n_in_adjusted].reshape(n_out, bin_fac).mean(1)
@@ -293,37 +308,6 @@ def convert_psd_cel_to_normal(psd_in):
 #######################################
 # Code to evaluate PSD using LS      #
 #######################################
-
-#def get_LS_PSD(t, y, yerr):
-    # Evaluate PSD of time-series using LS
-    #ls = LombScargle(t, y, yerr)
-    
-    #freq_step = 1/(t.max() - t.min()) # the minimum frequency in FFT, determined by the duration of the data
-                                      # NB this differs from the minimum freq in the freq array returned by LS.autopower()
-                                      # because it oversamples the frequency arrays by default
-    #freq, LS_power = ls.autopower(method="fast", normalization="psd")
-
-    #psd = LS_power * freq_step #/ 2 # we found empirically this matches the output for get_LS_PSD for a regularly sampled input
-    #psd = LS_power*freq_step/freq_step
-    #return freq, psd
-
-def windowFT(freqmin,freqmax,nsteps,t,x):
-    freqvec = np.linspace(freqmin,freqmax,int(nsteps))
-    ampvec = []
-    n=float(len(t))
-    for freq in freqvec:
-        omega = 2.*np.pi*freq
-        wts = np.sin(omega*t)
-        wtc = np.cos(omega*t)
-        camp = np.dot(wtc,x)
-        samp = np.dot(wts,x)
-        #amp = np.sqrt(camp**2 + samp**2)
-        amp = (camp + samp)**2
-        ampvec.append(amp)
-    ampvec = (2./n**3)*np.array(ampvec)
-    imax = np.argmax(ampvec)
-    freqmax = freqvec[imax]
-    return freqvec,ampvec,freqmax
 
 def get_WF_PS(t, freq):
     arg = 2 * np.pi * freq[:,None] * t[None, :]
@@ -540,7 +524,7 @@ def fit_time_series(t, y, components, y_err = None,
         freq, psd, wf = get_LS_PSD(t, y, y_err)
     else:
         freq, psd, wf = get_LS_PSD(t, y)
-    #print(components)
+  
     if components == ['SHO_aperiodic'] or components == ['SHO_aperiodic', 'SHO_aperiodic']:
         binned_freq, binned_psd = \
             bin_PSD_logfreq(freq, psd, n_bins = 50)
@@ -557,15 +541,11 @@ def fit_time_series(t, y, components, y_err = None,
         args_ = (components, binned_freq, binned_psd, use_GP, freq_step)
  
  
-    #print('params before optimisation', initial_params_log)
     
     # Find maximum a posteriori solution first
     r = minimize(neg_log_prob, initial_params_log,
                  args = args_ , method = 'L-BFGS-B') #, method = "L-BFGS-B" Nelder-Mead')
-    #print(r)
-    #print('params after optimisation', r.x)
  
-    #print('uncertainties', np.sqrt(np.diag(r.hess_inv.todense())))
     
     # Do MCMC
 
@@ -664,7 +644,6 @@ def fit_time_series(t, y, components, y_err = None,
     psd_50 = analytic_psd(mcmc[1], components, freq, freq_step)
     psd_95 = analytic_psd(mcmc[2], components, freq, freq_step)
     
-    #print('params after MCMC', mcmc[1])
         
                      
     if do_plot:
